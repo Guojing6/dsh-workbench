@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@guojing6/dsh-workbench)](https://www.npmjs.com/package/@guojing6/dsh-workbench)
 
-A personal workbench plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) Web.
+A personal workbench plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH).
 Turn your DSH into a **calendar + task list + AI assistant workbench**.
 
 [English](#english) · 简体中文
@@ -10,6 +10,10 @@ Turn your DSH into a **calendar + task list + AI assistant workbench**.
 ---
 
 # 中文
+
+> **分支说明**：本 `main` 分支是 **DSH Desktop 适配线**（版本 `2.1.0`），面向 **DSH Desktop 0.2.0-rc.2**。
+> 面向 `dsh web`（DSH 0.1.x）的旧线冻结在 `web` 分支（版本 `2.0.0`），两分支不再互相合并。
+> 分支差异只在宿主契约适配，功能集一致。
 
 ## 这是什么
 
@@ -80,36 +84,34 @@ Turn your DSH into a **calendar + task list + AI assistant workbench**.
 
 ### 前置条件
 
-- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) **0.1.5-rc.1** Web 版
+- [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) **Desktop 0.2.0-rc.2**（Electron 44 / Node 24）
 - Node.js `^22.19.0` 或 `>=24.0.0`
 - pnpm `>=11.7.0 <12`
 - 网络可访问 npm registry（或使用镜像）
 
-### 从 npm 安装（推荐）
+### 安装到 DSH Desktop
 
 ```sh
-dsh plugin --profile web add @guojing6/dsh-workbench
+dsh plugin --profile desktop add @guojing6/dsh-workbench
 ```
 
-或使用 npm 直接安装到项目：
+也可以在 Desktop 的**侧边栏「插件」页**里安装（同样写进 `~/.dsh/profiles/desktop`）。
+
+从 GitHub 或 Release tarball 安装：
 
 ```sh
-npm install @guojing6/dsh-workbench
+dsh plugin --profile desktop add git+https://github.com/Guojing6/dsh-workbench.git
+dsh plugin --profile desktop add file:/path/to/dsh-workbench-<version>.tgz
 ```
 
-### 从 GitHub 安装
+安装后**重启 DSH Desktop**（重启会结束当前会话）。
 
-```sh
-dsh plugin --profile web add git+https://github.com/Guojing6/dsh-workbench.git
-```
-
-或安装 Release tarball：
-
-```sh
-dsh plugin --profile web add file:/path/to/dsh-workbench-<version>.tgz
-```
-
-安装后重启 `dsh web`，浏览器硬刷新（Ctrl+Shift+R）。
+> ⚠️ DSH 0.2.0 在装载前会做 **peer 兼容性 preflight**：插件 `peerDependencies` 里任何
+> `@deepseek-ai/dsh` / `@deepseek-ai/dsh-*` 的版本区间不满足当前运行时，该插件会被**静默禁用**
+> 并在日志里打印原因。本分支已把区间升到 `^0.2.0-rc.2`，因此**不要**在 desktop 上安装 `web` 分支
+> （`^0.1.0-rc.6`）的构建产物。旧版本构建若必须临时运行，用
+> `dsh plugin --profile desktop allow-version '@guojing6/dsh-workbench@<版本>' --dsh-version 0.2.0-rc.2 --accept-risk`
+> 写精确版本豁免（写入 profile 的 `compatibility.json`），但它不改变依赖，只解除拒绝。
 
 ### 从源码开发
 
@@ -125,20 +127,37 @@ pnpm test       # 最小回归测试（使用构建产物）
 
 ```sh
 pnpm build
-dsh plugin --profile web add link:/path/to/dsh-workbench
+dsh plugin --profile desktop add link:/path/to/dsh-workbench
 ```
 
-> 开发模式修改代码后需要重新 `pnpm build` 并重启 `dsh web`。
+> 开发模式修改代码后需要重新 `pnpm build` 并重启 DSH Desktop。
+>
+> **Windows 原生构建**：仓库根目录的 `.npmrc` 固定了 `node-linker=hoisted`。pnpm 默认的
+> isolated 布局会用 junction 链接 `node_modules`，而 Node 在 Windows 上不会对 junction 做
+> realpath（未开开发者模式时 pnpm 也无法退化成 symlink），会导致传递依赖解析失败
+> （例如 `ERR_MODULE_NOT_FOUND: @deepseek-ai/dsh-util-values`）。若你手工删掉了 `.npmrc`
+> 或 node_modules 布局异常，用 `pnpm install --node-linker=hoisted` 重建。
 
 ## 兼容性与已知限制
 
-- 当前版本针对 **DSH 0.1.5-rc.1 Web 版** 开发与测试（插件 v1.13.1）。
-- 入口分两条：**会话标题栏按钮**走 DSH 官方槽位 `conversation.session.header.actions`（稳定）；
-  DSH 侧栏入口仍沿用 DOM 契约（`data-pane`、`logoRow`、`centerCol` 等 class）。
-  **DSH 升级到新的大版本时，请重新验证侧栏入口这些选择器，必要时适配。**
+- 当前版本针对 **DSH Desktop 0.2.0-rc.2** 开发与验证（插件 v2.1.0）；面向 `dsh web` 的
+  DSH 0.1.x 线在 `web` 分支（插件 v2.0.0）。
+- `peerDependencies` 只声明 `@deepseek-ai/dsh-host-webserver` / `dsh-system-prompt` / `dsh-tools`
+  与 `@deepseek-ai/cordis`。DSH 0.2.0 的 preflight 只校验 `@deepseek-ai/dsh` 与
+  `@deepseek-ai/dsh-*`，所以**升级 DSH 大版本时必须同步放宽这些区间**，否则插件会被静默禁用。
+- 入口分两条：**会话标题栏按钮**走 DSH 官方槽位 `conversation.session.header.actions`（0.2.0 仍在，稳定）；
+  **DSH 侧栏入口与工作台面板仍沿用 DOM 契约**。0.2.0 已移除 `data-pane` 属性（现靠
+  `[class*="sidebarCol"]` / `[class*="centerCol"]` 兜底），class 片段仍匹配但带构建哈希前缀，
+  只能用 `class*=` 匹配。**DSH 再升大版本时请重新验证这些选择器。**
+- 0.2.0 起会话列（`centerCol`）的子节点由官方 `main` keyed slot 决定（会话 / 插件 / 计划面板互相替换），
+  工作台靠 CSS 隐藏其余子节点来「接管」该列；点击宿主面板行（`panelRow`）会收起工作台。
+  长期方案是迁移到官方 `sidebar.panellist` + `main` 槽位（见 `docs/design/2026-10-05-desktop-0.2.0-adaptation.md`）。
 - 与 `dsh-web-ui`（task-board / ssh）共存时使用其 `data-dsh-*` 互斥协议；未安装时自动失效，**不依赖 dsh-web-ui**。
 - 微信提醒依赖 `@xmanrui/dsh-im`：**软探测**（`ctx.get('dshIm')`），未安装或未配置投递目标时静默降级为页内提醒 + 桌面通知，不影响其它功能。
-- 技能目录依赖宿主 `skills` 注册表：未安装时 Skill 选择器自动隐藏。
+- 技能目录依赖宿主 `skills` 注册表（`ctx.get('skills')`，0.2.0 服务名未变）：未安装时 Skill 选择器自动隐藏。
+  注意客户端**没有** `skills` 服务（只有 `ctx.remote.skills`），技能目录走 host 路由 `/api/workbench/skills`。
+- 桌面通知用浏览器 `Notification` API（Electron 渲染进程可用）；DSH 官方本身不调用该 API，若将来被禁用，
+  工作台会自动退化为页内横幅提醒。
 - 仅支持单用户本地使用；无云同步、无多用户权限体系。
 - AI 能力依赖你在 DSH 中已配置的模型与凭证；执行/咨询等会真实消耗 token。
 
@@ -146,6 +165,7 @@ dsh plugin --profile web add link:/path/to/dsh-workbench
 
 | 版本 | 要点 |
 |---|---|
+| 2.1.0 | **DSH Desktop 适配线（本 `main` 分支）**：peer 区间升到 `^0.2.0-rc.2`（0.2.0 的兼容性 preflight 会让旧区间插件静默禁用）；cordis `^4.0.4`、`cordis-plugin-timer` 1.1.6、`dsh-llm` 0.2.0-rc.2；修复 0.2.0 会话列改为官方 `main` keyed slot 后「点宿主面板行不收起工作台、插件页被接管样式隐藏」的问题；新增 `.npmrc`（Windows 原生构建用 hoisted 布局） |
 | 1.13.1 | 修复会话标题栏入口导致前端加载失败（cordis 服务读取必须用 `ctx.get`）；新增点子「文件夹」（手动建/改名/删除/合并、多对多归入与移出、整体转任务树）；新增「今日容量」条与每天可投入时长设置；UI 视觉层统一（边框/阴影/字号/间距，浅色下保持模块可辨识）；用户入口改用官方槽位 |
 | 1.12.1 | 微信草稿通知正文精简（任务标题 + 摘要首行 + 一行操作）；修复 reminder 测试在 Windows 下未关库导致临时目录删除失败 |
 | 1.12.0 | 验收「暂存」（草稿保持待确认但不再自动弹窗，可唤回）；驳回/暂存留痕并回传提交历史给 AI；草稿通知接入微信（默认只开验收与复盘） |

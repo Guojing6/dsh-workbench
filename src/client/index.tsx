@@ -2950,7 +2950,11 @@ export function apply(ctx: unknown): () => void {
     if (!open) return
     const target = event.target as HTMLElement | null
     if (target === null) return
-    if (target.closest('[class*="sessionRow"], [class*="projectRow"], [class*="searchResultRow"], [class*="searchResultWorkspace"], [class*="newSession"]') !== null) setOpen(false)
+    // DSH 0.2.0 起会话列（centerCol）的子节点由官方 `main` keyed slot 决定：会话、插件、
+    // 计划等面板会**互相替换**，而工作台是靠 CSS 隐藏 centerCol 其余子节点来「接管」的。
+    // 所以除了会话/项目/搜索行，还必须把宿主的面板行（panelRow：「对话」「插件」…）算进来，
+    // 否则点了「插件」不会收起工作台，插件管理面板会被工作台的接管样式一直隐藏。
+    if (target.closest('[class*="sessionRow"], [class*="projectRow"], [class*="searchResultRow"], [class*="searchResultWorkspace"], [class*="newSession"], [class*="panelRow"]') !== null) setOpen(false)
   }
   document.addEventListener(ACTIVATE_EVENT, onOtherActivate)
   document.addEventListener('click', onClickSidebarRow, true)

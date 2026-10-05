@@ -3,3 +3,5 @@ lib/
 *.tgz
 .pwtest/
 test-results/
+# pnpm 在本仓库根目录落的内容寻址存储（Windows 上 pnpm 会选项目本地 store）
+.pnpm-store/
